@@ -25,24 +25,13 @@ last_checkpoint="/fieldsets-bin/bash-template.sh"
 
 source /fieldsets-lib/shell/utils.sh
 source /fieldsets-lib/shell/db.sh
+source /fieldsets-lib/shell/plugins.sh
 
 ##
 # init_server: setup container config
 ##
 init() {
-    local dbready
-    local query
-    local results
-
-    # How to run a simple DB query.
-    dbready=$(wait_for_db "$POSTGRES_HOST" 5432 60)
-    if [[ "$dbready" = "true" ]]; then
-        query="SELECT * from cron.job_run_details;"
-        results=$(fetch_results "${query}")
-        while read -r row; do
-            echo "${row}" | jq '.'
-        done <<<"${results}"
-    fi
+    build_plugins
 }
 
 #===
