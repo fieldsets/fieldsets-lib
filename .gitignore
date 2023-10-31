@@ -1,15 +1,30 @@
+
+env
+
 .env
-*.env
-.gitkeep
 
-./src/*
-./src
+gitkeep
 
-./plugins/*
-./plugins
 
-# Editor output
-.vscode/
-.editorconfig
-.DS_Store
+
+/src/*
+
+/src
+
+
+
+/plugins/*
+
+/plugins
+
+
+
+ Editor output
+
+vscode/
+
+editorconfig
+
+DS_Store
+
 

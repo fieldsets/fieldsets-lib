@@ -1,56 +1,112 @@
-#!/usr/bin/env bash
 
-#===
-# bash-template.sh: A template for your bash scripts
-# See shell coding standards for details of formatting.
-# https://github.com/Fieldsets/fieldsets-pipeline/blob/main/docs/developer/coding-standards/shell.md
+!/usr/bin/env bash
+
+
+
+===
+
+ bash-template.sh: A template for your bash scripts
+
+ See shell coding standards for details of formatting.
+
+ https://github.com/Fieldsets/fieldsets-pipeline/blob/main/docs/developer/coding-standards/shell.md
+
+
+
+ @envvar VERSION | String 
+
+ @envvar ENVIRONMENT | String
+
+
+
+===
+
+
+
+et -eEa -o pipefail
+
+
+
+===
+
+ Variables
+
+===
+
+xport PGPASSWORD=${POSTGRES_PASSWORD} 
+
+RIORITY=0
+
+ast_checkpoint="/fieldsets-bin/bash-template.sh"
+
+
+
+===
+
+ Functions
+
+===
+
+
+
+ource /fieldsets-lib/shell/utils.sh
+
+ource /fieldsets-lib/shell/db.sh
+
+
+
 #
-# @envvar VERSION | String 
-# @envvar ENVIRONMENT | String
+
+ init_server: setup container config
+
 #
-#===
 
-set -eEa -o pipefail
+nit() {
 
-#===
-# Variables
-#===
-export PGPASSWORD=${POSTGRES_PASSWORD} 
-PRIORITY=0
-last_checkpoint="/fieldsets-bin/bash-template.sh"
+   local dbready
 
-#===
-# Functions
-#===
+   local query
 
-source /fieldsets-lib/shell/utils.sh
-source /fieldsets-lib/shell/db.sh
+   local results
 
-##
-# init_server: setup container config
-##
-init() {
-    local dbready
-    local query
-    local results
 
-    # How to run a simple DB query.
-    dbready=$(wait_for_db "$POSTGRES_HOST" 5432 60)
-    if [[ "$dbready" = "true" ]]; then
-        query="SELECT * from cron.job_run_details;"
-        results=$(fetch_results "${query}")
-        while read -r row; do
-            echo "${row}" | jq '.'
-        done <<<"${results}"
-    fi
-}
 
-#===
-# Main
-#===
-trap traperr ERR
+   # How to run a simple DB query.
 
-init
+   dbready=$(wait_for_db "$POSTGRES_HOST" 5432 60)
 
-((PRIORITY+=1))
+   if [[ "$dbready" = "true" ]]; then
+
+       query="SELECT * from cron.job_run_details;"
+
+       results=$(fetch_results "${query}")
+
+       while read -r row; do
+
+           echo "${row}" | jq '.'
+
+       done <<<"${results}"
+
+   fi
+
+
+
+
+
+===
+
+ Main
+
+===
+
+rap traperr ERR
+
+
+
+nit
+
+
+
+(PRIORITY+=1))
+
 
