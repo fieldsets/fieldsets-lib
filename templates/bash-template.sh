@@ -5,7 +5,7 @@
 # See shell coding standards for details of formatting.
 # https://github.com/Fieldsets/fieldsets-pipeline/blob/main/docs/developer/coding-standards/shell.md
 #
-# @envvar VERSION | String 
+# @envvar VERSION | String
 # @envvar ENVIRONMENT | String
 #
 #===
@@ -15,7 +15,7 @@ set -eEa -o pipefail
 #===
 # Variables
 #===
-export PGPASSWORD=${POSTGRES_PASSWORD} 
+export PGPASSWORD=${POSTGRES_PASSWORD}
 PRIORITY=0
 last_checkpoint="/fieldsets-bin/bash-template.sh"
 

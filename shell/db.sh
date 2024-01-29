@@ -47,8 +47,8 @@ wait_for_db() {
     local dbhost="${1}"
     local dbport="${2:-5432}"
     local timeout="${3:-60}s"
-    
+
     timeout -s SIGTERM --preserve-status --foreground "${timeout}" bash -c "until pg_isready -h ${dbhost} -p ${dbport}; do printf '.'; sleep 5; done; printf '\n'" > /dev/null 2>&1 || echo "false"
-    
+
     echo "true"
 }
