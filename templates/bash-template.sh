@@ -23,8 +23,8 @@ last_checkpoint="/fieldsets-bin/bash-template.sh"
 # Functions
 #===
 
-source /fieldsets-lib/shell/utils.sh
-source /fieldsets-lib/shell/db.sh
+source /fieldsets-lib/bash/utils.sh
+source /fieldsets-lib/bash/db.sh
 
 ##
 # init_server: setup container config
