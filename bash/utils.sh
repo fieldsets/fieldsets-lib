@@ -20,7 +20,7 @@ last_checkpoint="${last_checkpoint:-}"
 # @param STRING: message
 ##
 log() {
-    if [[ "${DEBUG_MODE:-true}" = "true" ]]; then
+    if [[ "${ENABLE_DEBUG_MODE:-true}" = "true" ]]; then
         local message="$1"
         echo "${message}"
     fi
