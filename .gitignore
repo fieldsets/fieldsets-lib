@@ -7,7 +7,7 @@
 !./bash/utils.sh
 
 ./pwsh/*
-!./pwsh/data.psm1
+!./pwsh/plugins.psm1
 !./pwsh/utils.psm1
 
 # Editor output
