@@ -51,50 +51,6 @@ Export-ModuleMember -Function isEmpty
 
 <#
 .Synopsis
-Checks a given dependency and returns a boolean if they are met or not.
-#>
-function checkDependencies {
-    $dependencies_met = $true
-    $plugin_dirs = Get-ChildItem -Path "/fieldsets-plugins/*" -Directory |
-    Select-Object FullName, Name, LastWriteTime, CreationTime
-
-    # Check to make sure all plugin dependencies are met.
-    foreach ($plugin in $plugin_dirs) {
-        if (Test-Path -Path "$($plugin.FullName)/dependencies.json") {
-            & "apt-get" update
-            Set-Location -Path $plugin.FullName
-            $plugin_deps = Get-Content -Raw -Path "$($plugin.FullName)/dependencies.json" | ConvertFrom-Json -Depth 6
-            if ($plugin_deps.packages.Length -gt 0) {
-                try {
-                    & "apt-get" install -y --no-install-recommends $($plugin_deps.packages)
-                } catch {
-                    $dependencies_met = $false
-                    Throw "A required package could not be installed"
-                } finally {
-                    & "apt-get" autoremove -y
-                    & "apt-get" clean -y
-                }
-            }
-
-            if ($plugin_deps.plugins.Length -gt 0) {
-                foreach ($plu in $plugin_deps.plugins) {
-                    if ((Test-Path -Path "/fieldsets-plugins/$($plu.name)/") -or (Test-Path -Path "/fieldsets-plugins/$($plu.token)/")) {
-                        Continue
-                    } else {
-                        #TODO: Install plugin if url is specified.
-                        $dependencies_met = $false
-                        Throw "The plugin $plu is not installed."
-                    }
-                }
-            }
-        }
-    }
-    return $dependencies_met
-}
-Export-ModuleMember -Function checkDependencies
-
-<#
-.Synopsis
 Check if a lockfile exists for a given script.
 #>
 function lockfileExists {

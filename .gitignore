@@ -2,11 +2,13 @@
 *.env
 .gitkeep
 
-./src/*
-./src
+./bash/*
+!./bash/db.sh
+!./bash/utils.sh
 
-./plugins/*
-./plugins
+./pwsh/*
+!./pwsh/plugins.psm1
+!./pwsh/utils.psm1
 
 # Editor output
 .vscode/
