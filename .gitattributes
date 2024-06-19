@@ -1,0 +1,32 @@
+* text=auto
+
+*.xltm binary
+*.xls binary
+*.exe binary
+*.nk2 binary
+*.fdm binary
+*.ico binary
+*.jpg binary
+*.png binary
+*.msi binary
+
+Dockerfile eol=lf
+*.gitattributes eol=lf
+*.gitignore eol=lf
+*.gitmodules eol=lf
+*.example eol=lf
+*.txt eol=lf
+*.sh eol=lf
+*.tab eol=lf
+*.py eol=lf
+*.json eol=lf
+*.js eol=lf
+*.jsx eol=lf
+*.md eol=lf
+*.sql eol=lf
+*.conf eol=lf
+*.yml eol=lf
+*.xml eol= lf
+*.ps1 eol=lf
+*.psm1 eol=lf
+*.ahk eol=lf

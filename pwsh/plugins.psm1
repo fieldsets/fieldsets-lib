@@ -26,6 +26,7 @@ Checks a given dependency and returns a boolean if they are met or not. Can retu
 #>
 function checkDependencies {
     $dependencies_met = $true
+    $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
     $plugin_dirs = Get-ChildItem -Path "/fieldsets-plugins/*" -Directory |
     Select-Object FullName, Name, LastWriteTime, CreationTime
 
@@ -35,28 +36,22 @@ function checkDependencies {
             Set-Location -Path $plugin.FullName
             $plugin_deps = Get-Content -Raw -Path "$($plugin.FullName)/dependencies.json" | ConvertFrom-Json -Depth 6
             # If containers are specified, then we make sure we are on the correct container to execute the phase script.
-            $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
             if ($plugin_deps.containers.Length -gt 0) {
                 if ($hostname -in $plugin_deps.containers) {
-                    Continue
-                } else {
-                    $dependencies_met = $null
-                    Break
+                    if ($plugin_deps.packages.Length -gt 0) {
+                        try {
+                            & "apt-get" update
+                            & "apt-get" install -y --no-install-recommends $($plugin_deps.packages)
+                        } catch {
+                            $dependencies_met = $false
+                            Throw "A required package could not be installed"
+                        } finally {
+                            & "apt-get" autoremove -y
+                            & "apt-get" clean -y
+                        }
+                    }
                 }
             }
-            if ($plugin_deps.packages.Length -gt 0) {
-                try {
-                    & "apt-get" update
-                    & "apt-get" install -y --no-install-recommends $($plugin_deps.packages)
-                } catch {
-                    $dependencies_met = $false
-                    Throw "A required package could not be installed"
-                } finally {
-                    & "apt-get" autoremove -y
-                    & "apt-get" clean -y
-                }
-            }
-
             if ($plugin_deps.plugins.Length -gt 0) {
                 foreach ($plu in $plugin_deps.plugins) {
                     if (Test-Path -Path "/fieldsets-plugins/$($plu.token)/") {
