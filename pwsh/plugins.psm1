@@ -7,8 +7,8 @@ function isPluginPhaseContainer {
         [Parameter(Mandatory=$true,Position=0)][String]$plugin
     )
     $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
-
     if (Test-Path -Path "/fieldsets-plugins/$($plugin)/dependencies.json") {
+        $plugin_deps = Get-Content -Raw -Path "/fieldsets-plugins/$($plugin)/dependencies.json" | ConvertFrom-Json -Depth 6
         # If containers are specified, then we make sure we are on the correct container to execute the phase script.
         if ($plugin_deps.containers.Length -gt 0) {
             if ($hostname -in $plugin_deps.containers) {
