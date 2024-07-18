@@ -55,7 +55,7 @@ Checks a given dependency and returns a boolean if they are met or not.
 #>
 function checkDependencies {
     $dependencies_met = $true
-    $plugin_dirs = Get-ChildItem -Path "/fieldsets-plugins/*" -Directory |
+    $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory |
     Select-Object FullName, Name, LastWriteTime, CreationTime
 
     # Check to make sure all plugin dependencies are met.
@@ -78,7 +78,7 @@ function checkDependencies {
 
             if ($plugin_deps.plugins.Length -gt 0) {
                 foreach ($plu in $plugin_deps.plugins) {
-                    if ((Test-Path -Path "/fieldsets-plugins/$($plu.name)/") -or (Test-Path -Path "/fieldsets-plugins/$($plu.token)/")) {
+                    if ((Test-Path -Path "/usr/local/fieldsets/plugins/$($plu.name)/") -or (Test-Path -Path "/usr/local/fieldsets/plugins/$($plu.token)/")) {
                         Continue
                     } else {
                         #TODO: Install plugin if url is specified.
