@@ -117,7 +117,7 @@ function removeLockfile {
         Remove-Item $lockfile –Force
     }
 }
-Export-ModuleMember -Function createLockfile
+Export-ModuleMember -Function removeLockfile
 
 <#
 .Synopsis
