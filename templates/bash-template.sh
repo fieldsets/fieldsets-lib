@@ -17,14 +17,14 @@ set -eEa -o pipefail
 #===
 export PGPASSWORD=${POSTGRES_PASSWORD}
 PRIORITY=0
-last_checkpoint="/fieldsets-bin/bash-template.sh"
+last_checkpoint="/usr/local/fieldsets/bin/bash-template.sh"
 
 #===
 # Functions
 #===
 
-source /fieldsets-lib/bash/utils.sh
-source /fieldsets-lib/bash/db.sh
+source /usr/local/fieldsets/lib/bash/utils.sh
+source /usr/local/fieldsets/lib/bash/db.sh
 
 ##
 # init_server: setup container config
