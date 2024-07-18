@@ -124,3 +124,4 @@ function xlsToJSON {
     # Close Excel
     [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($excelApplication)
 }
+Export-ModuleMember -Function xlsToJSON
