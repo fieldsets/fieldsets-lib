@@ -114,7 +114,7 @@ function removeLockfile {
         [Parameter(Mandatory=$true,Position=0)][String] $lockfile
     )
     if (lockfileExists $lockfile) {
-        Remove-Item $lockfile –Force
+        Remove-Item $lockfile -Force
     }
 }
 Export-ModuleMember -Function removeLockfile

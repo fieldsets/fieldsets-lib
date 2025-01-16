@@ -10,6 +10,9 @@
 !./pwsh/plugins.psm1
 !./pwsh/utils.psm1
 
+./plugins/*
+!./plugins/README.md
+
 # Editor output
 .vscode/
 .editorconfig
