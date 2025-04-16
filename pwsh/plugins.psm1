@@ -102,8 +102,8 @@ function buildPluginPriortyList {
             if ($plugin_json.ContainsKey('priority')) {
                 if ($plugin_enabled) {
                     $plugin_priority = $plugin_json['priority']
-                    $plugin_key = "priority-$($plugin_priority)
-                }"
+                    $plugin_key = "priority-$($plugin_priority)"
+                }
             }
         }
 
