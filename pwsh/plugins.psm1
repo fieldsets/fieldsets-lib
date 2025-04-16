@@ -91,9 +91,19 @@ function buildPluginPriortyList {
         $plugin_key = 'priority-99'
         if (Test-Path -Path "$($plugin.FullName)/plugin.json") {
             $plugin_json = Get-Content "$($plugin.FullName)/plugin.json" -Raw | ConvertFrom-Json -AsHashtable
+            $plugin_enabled = $true # Enabled by default
+            if ($plugin_json.ContainsKey('enabled')) {
+                # Make sure it is explicitly set to false. A null or anyother value should mean that it is enabled.
+                if ($false -eq $plugin_json['enabled']) {
+                    $plugin_enabled = $false
+                }
+            }
+
             if ($plugin_json.ContainsKey('priority')) {
-                $plugin_priority = $plugin_json['priority']
-                $plugin_key = "priority-$($plugin_priority)"
+                if ($plugin_enabled) {
+                    $plugin_priority = $plugin_json['priority']
+                    $plugin_key = "priority-$($plugin_priority)
+                }"
             }
         }
 
