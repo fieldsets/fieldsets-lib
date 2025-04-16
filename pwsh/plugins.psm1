@@ -108,7 +108,7 @@ function buildPluginPriortyList {
         $priority_list[$_.Key] = $_.Value
     }
 
-    [Environment]::SetEnvironmentVariable("FieldSetsPluginPriorityList", $priority_list, "Machine") | Out-Null
+    [System.Environment]::SetEnvironmentVariable("FieldSetsPluginPriorityList", $priority_list, "Machine") | Out-Null
     return $priority_list
 }
 Export-ModuleMember -Function buildPluginPriortyList
