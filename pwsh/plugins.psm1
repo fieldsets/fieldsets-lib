@@ -107,8 +107,6 @@ function buildPluginPriortyList {
     $plugins.GetEnumerator() | Sort-Object Name | ForEach-Object{
         $priority_list[$_.Key] = $_.Value
     }
-
-    [System.Environment]::SetEnvironmentVariable("FieldSetsPluginPriorityList", $priority_list, "Machine") | Out-Null
     return $priority_list
 }
 Export-ModuleMember -Function buildPluginPriortyList
