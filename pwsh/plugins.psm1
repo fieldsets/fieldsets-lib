@@ -7,8 +7,8 @@ function isPluginPhaseContainer {
         [Parameter(Mandatory=$true,Position=0)][String]$plugin
     )
     $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
-    if (Test-Path -Path "/usr/local/fieldsets/plugins/$($plugin)/dependencies.json") {
-        $plugin_deps = Get-Content -Raw -Path "/usr/local/fieldsets/plugins/$($plugin)/dependencies.json" | ConvertFrom-Json -Depth 6
+    if (Test-Path -Path "/usr/local/fieldsets/plugins/$($plugin)/dependencies.json" | Out-Null) {
+        $plugin_deps = Get-Content -Raw -Path "/usr/local/fieldsets/plugins/$($plugin)/dependencies.json" | ConvertFrom-Json | Out-Null
         # If containers are specified, then we make sure we are on the correct container to execute the phase script.
         if ($plugin_deps.containers.Length -gt 0) {
             if ($hostname -in $plugin_deps.containers) {
@@ -85,7 +85,6 @@ Export-ModuleMember -Function checkDependencies
     Updated Date: Apr 16 2025
 #>
 function buildPluginPriortyList {
-    Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
     $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
     $plugins = @{}
     foreach ($plugin in $plugin_dirs) {
@@ -109,8 +108,7 @@ function buildPluginPriortyList {
         $priority_list[$_.Key] = $_.Value
     }
 
-    [Environment]::SetEnvironmentVariable("FieldSetsPluginPriorityList", $priority_list, "User")
-    Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
+    [Environment]::SetEnvironmentVariable("FieldSetsPluginPriorityList", $priority_list, "Machine") | Out-Null
     return $priority_list
 }
 Export-ModuleMember -Function buildPluginPriortyList
