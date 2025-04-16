@@ -78,7 +78,7 @@ Export-ModuleMember -Function checkDependencies
 
 .EXAMPLE
     buildPluginPriortyList
-    Returns: @{"priority-00" = @('/usr/local/fieldsets/plugins//plugin1', '/usr/local/fieldsets/plugins//plugin2');"priority-10"= @('/usr/local/fieldsets/plugins/plugin3'}
+    Returns: @{"priority-00" = @('/usr/local/fieldsets/plugins/plugin1', '/usr/local/fieldsets/plugins/plugin2');"priority-10"= @('/usr/local/fieldsets/plugins/plugin3'}
 
 .NOTES
     Added: v0.0
@@ -89,9 +89,9 @@ function buildPluginPriortyList {
     $plugins = @{}
     foreach ($plugin in $plugin_dirs) {
         $plugin_key = 'priority-99'
+        $plugin_enabled = $true # Enabled by default
         if (Test-Path -Path "$($plugin.FullName)/plugin.json") {
             $plugin_json = Get-Content "$($plugin.FullName)/plugin.json" -Raw | ConvertFrom-Json -AsHashtable
-            $plugin_enabled = $true # Enabled by default
             if ($plugin_json.ContainsKey('enabled')) {
                 # Make sure it is explicitly set to false. A null or anyother value should mean that it is enabled.
                 if ($false -eq $plugin_json['enabled']) {
@@ -100,22 +100,24 @@ function buildPluginPriortyList {
             }
 
             if ($plugin_json.ContainsKey('priority')) {
-                if ($plugin_enabled) {
-                    $plugin_priority = $plugin_json['priority']
-                    $plugin_key = "priority-$($plugin_priority)"
-                }
+                $plugin_priority = $plugin_json['priority']
+                $plugin_key = "priority-$($plugin_priority)"
             }
         }
 
-        if (!($plugins.ContainsKey($plugin_key))) {
-            $plugins[$plugin_key] = [System.Collections.Generic.List[String]]::new()
+        if ($plugin_enabled) {
+            if (!($plugins.ContainsKey($plugin_key))) {
+                $plugins[$plugin_key] = [System.Collections.Generic.List[String]]::new()
+            }
+            $plugins[$plugin_key] += "$($plugin.FullName)"
         }
-        $plugins[$plugin_key] += "$($plugin.FullName)"
     }
 
     $priority_list = [Ordered]@{}
     $plugins.GetEnumerator() | Sort-Object Name | ForEach-Object{
-        $priority_list[$_.Key] = $_.Value
+        if (($null -ne $_.Key) -and ($null -ne $_.Value)) {
+            $priority_list[$_.Key] = $_.Value
+        }
     }
     return $priority_list
 }
