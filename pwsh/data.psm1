@@ -125,3 +125,24 @@ function xlsToJSON {
     [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($excelApplication)
 }
 Export-ModuleMember -Function xlsToJSON
+
+<#
+.SYNOPSIS
+    Import data from a JSON file to a powershell object
+.PARAMETER -path [String]
+    The JSONdata file you would like to import.
+.OUTPUTS
+    [OrderedHashtable] Returns an ordered hashtable.
+.EXAMPLE
+    $data = importJSON -path "/somepath/file.json"
+.NOTES
+    Added: v0.0
+    Updated Date: Apr 16 2025
+#>
+function importJSON {
+    param(
+        [Parameter(Mandatory=$true,Position=0)][String] $path
+    )
+    return Get-Content "$($path)" -Raw | ConvertFrom-Json -AsHashtable
+}
+Export-ModuleMember -Function importJSON

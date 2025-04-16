@@ -26,8 +26,36 @@ function dotenv {
 Export-ModuleMember -Function dotenv
 
 <#
+.SYNOPSIS
+    Sanitize a token for the DB
+.DESCRIPTION
+    Remove unwanted characters from a string
+.PARAMETER -token [String]
+    The token you want to sanitize.
+.OUTPUTS
+    [string] Returns a tokenized string.
+.EXAMPLE
+    sanitizeToken -token "Some Token"
+    Returns: 'some_token'
+.NOTES
+    Added: v0.0
+    Updated Date: Apr 16 2025
+#>
+function sanitizeToken {
+    param(
+        [Parameter(Mandatory=$true)][String]$token
+    )
+    $invalidChars = '[]/|\+={}-$%^&*() ,~`"^$#@?.;:!'
+    $arrInvalidChars = "$($invalidChars)'".ToCharArray() + [IO.Path]::GetInvalidFileNameChars()
+    $split_token_array = [regex]::Unescape($token).ToLower().Split([Char[]]$arrInvalidChars)
+    $token = @($split_token_array | Where-Object { $null -ne $_ -and $_ -ne ""}) -join '_'
+    return ($token -replace '_+', '_').TrimEnd('_')
+} #end function sanitizeToken
+Export-ModuleMember -Function sanitizeToken
+
+<#
 .Synopsis
-Checks if a string is not empty
+    Checks if a string is not empty
 #>
 function notEmpty{
     Param(
@@ -48,50 +76,6 @@ function isEmpty{
     return (($null -eq $s) -or ($s.Length -eq 0))
 }
 Export-ModuleMember -Function isEmpty
-
-<#
-.Synopsis
-Checks a given dependency and returns a boolean if they are met or not.
-#>
-function checkDependencies {
-    $dependencies_met = $true
-    $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory |
-    Select-Object FullName, Name, LastWriteTime, CreationTime
-
-    # Check to make sure all plugin dependencies are met.
-    foreach ($plugin in $plugin_dirs) {
-        if (Test-Path -Path "$($plugin.FullName)/dependencies.json") {
-            & "apt-get" update
-            Set-Location -Path $plugin.FullName
-            $plugin_deps = Get-Content -Raw -Path "$($plugin.FullName)/dependencies.json" | ConvertFrom-Json -Depth 6
-            if ($plugin_deps.packages.Length -gt 0) {
-                try {
-                    & "apt-get" install -y --no-install-recommends $($plugin_deps.packages)
-                } catch {
-                    $dependencies_met = $false
-                    Throw "A required package could not be installed"
-                } finally {
-                    & "apt-get" autoremove -y
-                    & "apt-get" clean -y
-                }
-            }
-
-            if ($plugin_deps.plugins.Length -gt 0) {
-                foreach ($plu in $plugin_deps.plugins) {
-                    if ((Test-Path -Path "/usr/local/fieldsets/plugins/$($plu.name)/") -or (Test-Path -Path "/usr/local/fieldsets/plugins/$($plu.token)/")) {
-                        Continue
-                    } else {
-                        #TODO: Install plugin if url is specified.
-                        $dependencies_met = $false
-                        Throw "The plugin $plu is not installed."
-                    }
-                }
-            }
-        }
-    }
-    return $dependencies_met
-}
-Export-ModuleMember -Function checkDependencies
 
 <#
 .Synopsis

@@ -68,3 +68,49 @@ function checkDependencies {
     return $dependencies_met
 }
 Export-ModuleMember -Function checkDependencies
+
+<#
+.SYNOPSIS
+    Check the plugin directory and builds a list of plugin priorities. If no plugin.json is found with the priority defined. The default priority of 99 is assigned
+
+.OUTPUTS
+    [IOrderedDictionary] An ordered by priority dictionary of plugin directories
+
+.EXAMPLE
+    buildPluginPriortyList
+    Returns: @{"priority-00" = @('/usr/local/fieldsets/plugins//plugin1', '/usr/local/fieldsets/plugins//plugin2');"priority-10"= @('/usr/local/fieldsets/plugins/plugin3'}
+
+.NOTES
+    Added: v0.0
+    Updated Date: Apr 16 2025
+#>
+function buildPluginPriortyList {
+    Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
+    $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
+    $plugins = @{}
+    foreach ($plugin in $plugin_dirs) {
+        $plugin_key = 'priority-99'
+        if (Test-Path -Path "$($plugin.FullName)/plugin.json") {
+            $plugin_json = Get-Content "$($path)" -Raw | ConvertFrom-Json -AsHashtable
+            if ($plugin_json.ContainsKey('priority')) {
+                $plugin_priority = $plugin_json['priority']
+                $plugin_key = "priority-$($plugin_priority)"
+            }
+        }
+
+        if (!($plugins.ContainsKey($plugin_key))) {
+            $plugins[$plugin_key] = [System.Collections.Generic.List[String]]::new()
+        }
+        $plugins[$plugin_key] += "$($plugin.FullName)"
+    }
+
+    $priority_list = [Ordered]@{}
+    $plugins.GetEnumerator() | Sort-Object Name | ForEach-Object{
+        $priority_list[$_.Key] = $_.Value
+    }
+
+    [Environment]::SetEnvironmentVariable("FieldSetsPluginPriorityList", $priority_list, "User")
+    Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
+    return $priority_list
+}
+Export-ModuleMember -Function buildPluginPriortyList
