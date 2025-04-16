@@ -91,7 +91,7 @@ function buildPluginPriortyList {
     foreach ($plugin in $plugin_dirs) {
         $plugin_key = 'priority-99'
         if (Test-Path -Path "$($plugin.FullName)/plugin.json") {
-            $plugin_json = Get-Content "$($path)" -Raw | ConvertFrom-Json -AsHashtable
+            $plugin_json = Get-Content "$($plugin.FullName)/plugin.json" -Raw | ConvertFrom-Json -AsHashtable
             if ($plugin_json.ContainsKey('priority')) {
                 $plugin_priority = $plugin_json['priority']
                 $plugin_key = "priority-$($plugin_priority)"
