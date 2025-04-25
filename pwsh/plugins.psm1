@@ -85,40 +85,51 @@ Export-ModuleMember -Function checkDependencies
     Updated Date: Apr 16 2025
 #>
 function buildPluginPriortyList {
-    $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
-    $plugins = @{}
-    foreach ($plugin in $plugin_dirs) {
-        $plugin_key = 'priority-99'
-        $plugin_enabled = $true # Enabled by default
-        if (Test-Path -Path "$($plugin.FullName)/plugin.json") {
-            $plugin_json = Get-Content "$($plugin.FullName)/plugin.json" -Raw | ConvertFrom-Json -AsHashtable
-            if ($plugin_json.ContainsKey('enabled')) {
-                # Make sure it is explicitly set to false. A null or anyother value should mean that it is enabled.
-                if ($false -eq $plugin_json['enabled']) {
-                    $plugin_enabled = $false
+    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/' -ChildPath "pwsh"))
+    $cache_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./cache.psm1"))
+    Import-Module -Function cache_set, cache_get, cache_key_exists -Name $cache_module_path
+    if (cache_key_exists -key 'plugin_priority_queue') {
+        $priority_list = cache_get -key 'plugin_priority_queue'
+        Write-Host "Using cached Priority List"
+    } else {
+        $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
+        $plugins = @{}
+        foreach ($plugin in $plugin_dirs) {
+            $plugin_key = 'priority-99'
+            $plugin_enabled = $true # Enabled by default
+            if (Test-Path -Path "$($plugin.FullName)/plugin.json") {
+                $plugin_json = Get-Content "$($plugin.FullName)/plugin.json" -Raw | ConvertFrom-Json -AsHashtable
+                if ($plugin_json.ContainsKey('enabled')) {
+                    # Make sure it is explicitly set to false. A null or anyother value should mean that it is enabled.
+                    if ($false -eq $plugin_json['enabled']) {
+                        $plugin_enabled = $false
+                    }
+                }
+
+                if ($plugin_json.ContainsKey('priority')) {
+                    $plugin_priority = $plugin_json['priority']
+                    $plugin_key = "priority-$($plugin_priority)"
                 }
             }
 
-            if ($plugin_json.ContainsKey('priority')) {
-                $plugin_priority = $plugin_json['priority']
-                $plugin_key = "priority-$($plugin_priority)"
+            if ($plugin_enabled) {
+                if (!($plugins.ContainsKey($plugin_key))) {
+                    $plugins[$plugin_key] = [System.Collections.Generic.List[String]]::new()
+                }
+                $plugins[$plugin_key] += "$($plugin.FullName)"
             }
         }
 
-        if ($plugin_enabled) {
-            if (!($plugins.ContainsKey($plugin_key))) {
-                $plugins[$plugin_key] = [System.Collections.Generic.List[String]]::new()
+        $priority_list = [Ordered]@{}
+        $plugins.GetEnumerator() | Sort-Object Name | ForEach-Object{
+            if (($null -ne $_.Key) -and ($null -ne $_.Value)) {
+                $priority_list[$_.Key] = $_.Value
             }
-            $plugins[$plugin_key] += "$($plugin.FullName)"
         }
+        cache_set -key 'plugin_priority_queue' -value ($priority_list)
+        Write-Host "Using generated Priority List"
     }
-
-    $priority_list = [Ordered]@{}
-    $plugins.GetEnumerator() | Sort-Object Name | ForEach-Object{
-        if (($null -ne $_.Key) -and ($null -ne $_.Value)) {
-            $priority_list[$_.Key] = $_.Value
-        }
-    }
+    Write-Host $priority_list
     return $priority_list
 }
 Export-ModuleMember -Function buildPluginPriortyList

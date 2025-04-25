@@ -76,7 +76,6 @@ function xlsToJSON {
     Write-Verbose "Outputting sheet '$SheetName' to '$OutputFileName'"
     #endregion prep
 
-
     # Grab the sheet to work with
     $theSheet = $Workbook.Sheets | Where-Object {$_.Name -eq $SheetName}
 
