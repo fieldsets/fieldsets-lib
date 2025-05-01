@@ -150,8 +150,6 @@ Export-ModuleMember -Function createLockfile
 .Parameter $includeCreated
 .Parameter $includeDeleted
 .Example
-    Import-Module pswatch
-
     watch "Myfolder\Other" | %{
         Write-Host "$_.Path has changed!"
         RunUnitTests.exe $_.Path
@@ -206,7 +204,7 @@ function watch{
         $conditions = $conditions -bOr [System.IO.WatcherChangeTypes]::Deleted
     }
 
-    while($TRUE){
+    while($true){
         $result = $watcher.WaitForChanged($conditions, 1000);
         if($result.TimedOut){
             continue;

@@ -129,7 +129,7 @@ function buildPluginPriortyList {
         cache_set -key 'plugin_priority_queue' -value ($priority_list)
         Write-Host "Using generated Priority List"
     }
-    Write-Host $priority_list
+    Write-Host (ConvertTo-JSON -InputObject $priority_list)
     return $priority_list
 }
 Export-ModuleMember -Function buildPluginPriortyList

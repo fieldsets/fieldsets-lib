@@ -41,7 +41,7 @@ function fetchFieldSchema {
         parent_token = $null
         default_value = $null
         store = $null
-        meta = @{}
+        meta_data = @{}
     }
     if ($null -ne $defaults) {
         foreach ($entry in $defaults.GetEnumerator()) {
@@ -71,7 +71,7 @@ Export-ModuleMember -Function fetchFieldSchema
             label = 'Default Set'
             parent = $null
             parent_token = $null
-            meta = @{}
+            meta_data = @{}
         }
 
     .NOTES
@@ -89,7 +89,7 @@ function fetchSetSchema {
         label = $null
         parent = $null
         parent_token = $null
-        meta = @{}
+        meta_data = @{}
     }
     if ($null -ne $defaults) {
         foreach ($entry in $defaults.GetEnumerator()) {
@@ -160,7 +160,72 @@ function fetchFieldSetSchema {
 }
 Export-ModuleMember -Function fetchFieldSetSchema
 
-function loadSchemas {
+<#
+    .SYNOPSIS
+    Register a schema in the fieldsets pipeline
+
+    .PARAMETER -token [String]
+    The token for the schema
+
+    .PARAMETER -priority [Int]
+    Priority for which this schemas callback should be called
+
+    .PARAMETER -callback [Int]
+    Priority for which this schemas callback should be called
+
+    .OUTPUTS
+    None
+
+    .EXAMPLE
+    registerSchema -defaults (@{type='field'})
+    Returns:
+        [ordered]@{
+            id = $null;
+            token = $null
+            label = $null
+            parent = $null
+            parent_token = $null
+            set_id = $null
+            set_token = $null
+            field_id = $null
+            field_token = $null
+            type = 'field'
+            store = $null
+        }
+
+    .NOTES
+    Added Version: 1.0.0
+    Added Date: Apr 23 2025
+    Updated Date: Apr 23 2025
+#>
+function registerSchema {
+    Param(
+        [Parameter(Mandatory=$false)][System.Collections.IDictionary]$defaults = $null
+    )
+    $schema = [ordered]@{
+        id = $null
+        token = $null
+        label = $null
+        parent = $null
+        parent_token = $null
+        set_id = $null
+        set_token = $null
+        field_id = $null
+        field_token = $null
+        type = $null
+        store = $null
+    }
+    if ($null -ne $defaults) {
+        foreach ($entry in $defaults.GetEnumerator()) {
+            $schema.("$($entry.Key)") = $entry.Value
+        }
+    }
+    return [System.Collections.Specialized.IOrderedDictionary]$schema
+
+}
+Export-ModuleMember -Function registerSchema
+
+function fetchSchema {
     $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/' -ChildPath "pwsh"))
     $plugins_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./plugins.psm1"))
     Import-Module -Function buildPluginPriortyList -Name $plugins_module_path
