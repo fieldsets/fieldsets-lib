@@ -77,19 +77,19 @@ Export-ModuleMember -Function checkDependencies
     [IOrderedDictionary] An ordered by priority dictionary of plugin directories
 
 .EXAMPLE
-    buildPluginPriortyList
+    getPluginPriorityList
     Returns: @{"priority-00" = @('/usr/local/fieldsets/plugins/plugin1', '/usr/local/fieldsets/plugins/plugin2');"priority-10"= @('/usr/local/fieldsets/plugins/plugin3'}
 
 .NOTES
     Added: v0.0
     Updated Date: Apr 16 2025
 #>
-function buildPluginPriortyList {
+function getPluginPriorityList {
     $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/' -ChildPath "pwsh"))
     $cache_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./cache.psm1"))
-    Import-Module -Function cache_set, cache_get, cache_key_exists -Name $cache_module_path
-    if (cache_key_exists -key 'plugin_priority_queue') {
-        $priority_list = cache_get -key 'plugin_priority_queue'
+    Import-Module -Function session_cache_set, session_cache_get, session_cache_key_exists -Name $cache_module_path
+    if (session_cache_key_exists -key 'plugin_priority_queue') {
+        $priority_list = session_cache_get -key 'plugin_priority_queue'
         Write-Host "Using cached Priority List"
     } else {
         $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
@@ -126,10 +126,10 @@ function buildPluginPriortyList {
                 $priority_list[$_.Key] = $_.Value
             }
         }
-        cache_set -key 'plugin_priority_queue' -value ($priority_list)
+        session_cache_set -key 'plugin_priority_queue' -value $priority_list
         Write-Host "Using generated Priority List"
     }
     Write-Host (ConvertTo-JSON -InputObject $priority_list)
     return $priority_list
 }
-Export-ModuleMember -Function buildPluginPriortyList
+Export-ModuleMember -Function getPluginPriorityList

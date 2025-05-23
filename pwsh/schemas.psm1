@@ -228,7 +228,7 @@ Export-ModuleMember -Function registerSchema
 function fetchSchema {
     $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/' -ChildPath "pwsh"))
     $plugins_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./plugins.psm1"))
-    Import-Module -Function buildPluginPriortyList -Name $plugins_module_path
+    Import-Module -Function getPluginPriorityList -Name $plugins_module_path
 
     # Iterate through plugins and export individual functions
     #. (Join-Path -Path $module_path -ChildPath "getDisplayNameEmailAddress.ps1")

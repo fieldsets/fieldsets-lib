@@ -7,7 +7,7 @@ foreach ($core_module in $core_modules) {
 }
 
 # After core modules have loaded. Iterate through plugin libs and clobber any aliases or functions.
-$plugins_priority_list = buildPluginPriortyList
+$plugins_priority_list = getPluginPriorityList
 foreach ($plugin_dirs in $plugins_priority_list.Values) {
     foreach ($plugin_dir in $plugin_dirs) {
         $plugin_lib = [System.IO.Path]::GetFullPath((Join-Path -Path $plugin_dir -ChildPath './lib/'))
