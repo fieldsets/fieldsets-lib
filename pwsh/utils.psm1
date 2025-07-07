@@ -217,3 +217,100 @@ function watch{
     }
 }
 Export-ModuleMember -Function watch
+
+<#
+.SYNOPSIS
+    getFieldType Return Field Type ID and Field Type Token from external data type strings (primarily PWSH).
+
+.OUTPUTS
+    [Array] Returns an array in format @([INT]$field_type_id, [STRING]$field_type_token)
+
+.EXAMPLE
+    $value = 'A String'
+    $data_type = $value.GetType().Name
+    $field_type = getFieldType -data_type $data_type
+
+.NOTES
+    Added: v0.0
+    Updated Date: July 5, 2025
+#>
+function getFieldType {
+    param(
+        [Parameter(Mandatory=$true,Position=0)][String]$data_type
+    )
+    $field_type_id = 0
+    $field_type = 'none'
+    switch ($data_type.ToLower()) {
+        ({
+            ($_ -eq 'hashtable') -or
+            ($_ -eq 'object') -or
+            ($_ -eq 'ordereddictionary') -or
+            ($_ -eq 'dictionary')
+        }) {
+            $field_type_id = 6
+            $field_type = 'object'
+            break
+        }
+        ({
+            ($_ -eq 'double') -or
+            ($_ -eq 'float') -or
+            ($_ -eq 'decimal')
+        }) {
+            $field_type_id = 5
+            $field_type = 'decimal'
+            break
+        }
+        ({
+            ($_ -eq 'int') -or
+            ($_ -eq 'int16') -or
+            ($_ -eq 'int32') -or
+            ($_ -eq 'int64')
+        }) {
+            $field_type_id = 4
+            $field_type = 'number'
+            break
+        }
+        ({
+            ($_ -eq 'string') -or
+            ($_ -eq 'char') -or
+            ($_ -eq 'text')
+        }) {
+            $field_type_id = 3
+            $field_type = 'string'
+            break
+        }
+        ({
+            ($_ -eq 'datetime') -or
+            ($_ -eq 'timestamp')
+        }) {
+            $field_type_id = 12
+            $field_type = 'ts'
+            break
+        }
+        ({
+            ($_ -eq 'object[]') -or
+            ($_ -eq 'string[]') -or
+            ($_ -eq 'int[]') -or
+            ($_ -eq 'array') -or
+            ($_ -eq 'list')
+        }) {
+            $field_type_id = 7
+            $field_type = 'list'
+            break
+        }
+        ({
+            ($_ -eq 'bool') -or
+            ($_ -eq 'boolean')
+        }) {
+            $field_type_id = 10
+            $field_type = 'bool'
+            break
+        }
+        Default {
+            $field_type_id = 6
+            $field_type = 'object'
+        }
+    }
+    return @($field_type_id,$field_type)
+}
+Export-ModuleMember -Function getFieldType
