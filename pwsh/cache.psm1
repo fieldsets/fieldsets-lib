@@ -1,3 +1,52 @@
+
+<#
+.SYNOPSIS
+    session_cache_connect Connect via SSH to our PSSession.
+
+.OUTPUTS
+    N/A
+
+.EXAMPLE
+    session_cache_connect
+
+.NOTES
+    Added: v0.0
+    Updated Date: July 5 2025
+#>
+function session_cache_connect {
+    $home_path = [System.Environment]::GetEnvironmentVariable('HOME')
+    $fieldsets_session_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_HOST')
+    $session_port = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_PORT')
+    $ssh_key_path = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY_PATH')
+    $session_key = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY')
+    if ($ssh_key_path.StartsWith('~')) {
+        $ssh_key_path = $ssh_key_path.Replace('~', "$($home_path)")
+    }
+    $session_key_path = [System.IO.Path]::GetFullPath((Join-Path -Path $ssh_key_path -ChildPath $session_key))
+
+    Enter-PSSession -HostName $fieldsets_session_host -Options @{StrictHostKeyChecking='no'} -Port $session_port -KeyFilePath $session_key_path
+}
+Export-ModuleMember -Function session_cache_connect
+
+<#
+.SYNOPSIS
+    session_cache_disconnect Disconnect our SSH PSSession.
+
+.OUTPUTS
+    N/A
+
+.EXAMPLE
+    session_cache_disconnect
+
+.NOTES
+    Added: v0.0
+    Updated Date: July 5 2025
+#>
+function session_cache_disconnect {
+    Exit-PSSession
+}
+Export-ModuleMember -Function session_cache_disconnect
+
 <#
 .SYNOPSIS
     session_cache_init The default in memory session cache. Called by wrapper function cache_init.
@@ -13,54 +62,68 @@
     Updated Date: May 6 2025
 #>
 function session_cache_init {
-    # The session cache should always be run on local host. If an alternate cache is used and uses the envvar $FIELDSEST_CACHE_HOST, you can still instantiate the session host if needed and call the session cache functions without the wrapper functions.
-    $fieldsets_local_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_LOCAL_HOST')
-    $home_path = [System.Environment]::GetEnvironmentVariable('HOME')
-    $session_port = [System.Environment]::GetEnvironmentVariable('SSH_PORT')
-    $ssh_key_path = [System.Environment]::GetEnvironmentVariable('SSH_KEY_PATH')
-    $session_key = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY')
-    if ($ssh_key_path.StartsWith('~')) {
-        $ssh_key_path = $ssh_key_path.Replace('~', "$($home_path)")
-    }
-    $session_key_path = [System.IO.Path]::GetFullPath((Join-Path -Path $ssh_key_path -ChildPath $session_key))
+    Param (
+        [Parameter(Mandatory=$false)][Int]$expires_sec = 86400 #24hrs by default
+    )
 
-    $session = Get-PSSession -Name 'fieldsets-cache' -ErrorAction SilentlyContinue
-    if ($null -eq $session) {
-        $session = New-PSSession -Name 'fieldsets-cache' -HostName $fieldsets_local_host -Options @{StrictHostKeyChecking='no'} -Port $session_port -KeyFilePath $session_key_path
-    }
-    Invoke-Command -Session $session -ScriptBlock {
-        Param(
-            $cache_host,
-            $cache_port
-        )
-        $encoding = New-Object System.Text.AsciiEncoding
-	    $buffer = New-Object System.Byte[] 1024
+    $cache_host = 'localhost'
+    $cache_port = 11211
+    $data_value = ''
+    $encoding = New-Object System.Text.AsciiEncoding
+    $buffer = New-Object System.Byte[] 1024
 
-        $socket = New-Object System.Net.Sockets.TcpClient("$($cache_host)", $cache_port)
-        if ($null -eq $socket) {
-            return
-        }
-        $stream = $socket.GetStream()
-        $writer = New-Object System.IO.StreamWriter($stream)
-        $command = 'get fieldsets_cache'
+    $socket = New-Object System.Net.Sockets.TcpClient("$($cache_host)", $cache_port)
+    if ($null -eq $socket) {
+        return
+    }
+    $stream = $socket.GetStream()
+    $writer = New-Object System.IO.StreamWriter($stream)
+    $command = 'get fieldsets_session_cache'
+    $writer.WriteLine($command)
+    $writer.Flush()
+    # Wait for stream Write
+    Start-Sleep -Milliseconds 1
+
+    $cache_initialized = $false
+
+    while ($stream.DataAvailable) {
+        $read = $stream.Read($buffer, 0, 1024)
+        $lines = ($encoding.GetString($buffer, 0, $read)).Trim(" ","`r","`t").Split("`n")
+        foreach ($line in $lines){
+            $readline_value = ("$($line)").Trim(" ","`r","`n","`t")
+
+            #Write-Output "INIT LINE: '$($readline_value)'"
+            if (
+                ("$($readline_value)".Length -gt 0 ) -and
+                (!($readline_value.StartsWith('VALUE fieldsets_session_cache'))) -and
+                ($readline_value -ne 'END')
+            ) {
+                $data_value = "$($data_value)$($readline_value)"
+            }
+        }        
+    }
+
+    if ($data_value.Length -gt 0) {
+        $cache_initialized = $true
+    } else {
+        $cache_initialized = $false
+    }
+
+
+    if ($false -eq $cache_initialized) {
+        $data_value = ConvertTo-Json -InputObject @{'initialized' = $true} -Compress
+        $data_value_bytes = [System.Text.Encoding]::ASCII.GetBytes($data_value)
+        $command = "set fieldsets_session_cache 6 $($expires_sec) $($data_value_bytes.Length)`r`n$($data_value)`r`n"
         $writer.WriteLine($command)
         $writer.Flush()
-        $cache_initialized = $false
-        if ($stream.DataAvailable) {
-            $read = $stream.Read($buffer, 0, 1024)
-            $data_val = ($encoding.GetString($buffer, 0, $read))
-            Write-Output $data_val
-        }
-
-        if ($false -eq $cache_initialized) {
-            $command = 'set fieldsets_cache'
-        }
-
-        Set-Variable -Name session_cache -Value (@{'initialized' = $true}) -Scope Global
-    } -ArgumentList 'localhost', 11211
+        # Wait for stream Write
+        Start-Sleep -Milliseconds 1
 
 
-    return $session
+    }
+    $socket.Close()
+
+    return $data_value
 }
 Export-ModuleMember -Function session_cache_init
 
@@ -87,24 +150,54 @@ Export-ModuleMember -Function session_cache_init
 #>
 function session_cache_get {
     Param(
-        [Parameter(Mandatory=$false)][String]$key = $null,
-        [Parameter(Mandatory=$false)][System.Management.Automation.Runspaces.PSSession]$session = $null
+        [Parameter(Mandatory=$true)][String]$key
     )
-    $current_cache = @{}
-    if ($null -eq $session) {
-        $session = session_cache_init
+
+    $cache_host = 'localhost'
+    $cache_port = 11211
+    $data_value = ''
+    $encoding = New-Object System.Text.AsciiEncoding
+    $buffer = New-Object System.Byte[] 1024
+
+    $socket = New-Object System.Net.Sockets.TcpClient("$($cache_host)", $cache_port)
+    if ($null -eq $socket) {
+        return
     }
 
-    $current_cache = Invoke-Command -Session $session -ScriptBlock {
-        (Get-Variable -Name session_cache -Scope Global).Value
+
+    $stream = $socket.GetStream()
+    $writer = New-Object System.IO.StreamWriter($stream)
+    $command = "get $($key)"
+    $writer.WriteLine($command)
+    $writer.Flush()
+
+    # Wait for stream Write
+    Start-Sleep -Milliseconds 1
+
+    while ($stream.DataAvailable) {
+        $read = $stream.Read($buffer, 0, 1024)
+        $lines = ($encoding.GetString($buffer, 0, $read)).Trim(" ","`r","`t").Split("`n")
+        foreach ($line in $lines){
+            $readline_value = ("$($line)").Trim(" ","`r","`n","`t")
+
+            if (
+                ("$($readline_value)".Length -gt 0 ) -and
+                (!($readline_value.StartsWith("VALUE $($key)"))) -and
+                ($readline_value -ne 'END')
+            ) {
+                $data_value = "$($data_value)$($readline_value)"
+            }
+            
+        }        
     }
-    if (($null -eq $key) -or ($key.Length -eq 0)) {
-        return $current_cache
+
+    $socket.Close()
+
+    if ($data_value.Length -gt 0) {
+        return $data_value
     }
-    if ($current_cache.ContainsKey($key)) {
-        return $current_cache[$key]
-    }
-    return $null
+
+    return
 }
 Export-ModuleMember -Function session_cache_get
 
@@ -129,32 +222,38 @@ Export-ModuleMember -Function session_cache_get
 
 .NOTES
     Added: v0.0
-    Updated Date: Apr 24 2025
+    Updated Date: July 5, 2025
 #>
 function session_cache_set {
     Param(
         [Parameter(Mandatory=$true)][String]$key,
         [Parameter(Mandatory=$true)][PSCustomObject]$value,
-        [Parameter(Mandatory=$false)][System.Management.Automation.Runspaces.PSSession]$session = $null
+        [Parameter(Mandatory=$false)][Int]$expires_sec = 86400 #24hrs by default
     )
-    if ($null -eq $session) {
-        $session = session_cache_init
-    }
+    $cache_host = 'localhost'
+    $cache_port = 11211
+    $data_value = ''
 
-    $current_cache = Invoke-Command -Session $session -ScriptBlock {
-        (Get-Variable -Name session_cache -Scope Global).Value
+    $socket = New-Object System.Net.Sockets.TcpClient("$($cache_host)", $cache_port)
+    if ($null -eq $socket) {
+        return
     }
+    $stream = $socket.GetStream()
+    $writer = New-Object System.IO.StreamWriter($stream)
 
-    if ($current_cache.ContainsKey($key)) {
-        $current_cache[$key] = $value
-    } else {
-        $current_cache.Add($key,$value)
-    }
+    $data_type = $value.GetType().Name
+    $field_type = getFieldType -data_type $data_type
+    $data_value = ConvertTo-Json -InputObject $value -Compress
 
-    Invoke-Command -Session $session -ScriptBlock {
-        param($current_cache)
-        Set-Variable -Name session_cache -Value ($current_cache) -Scope Global
-    } -ArgumentList ($current_cache)
+    $data_value_bytes = [System.Text.Encoding]::ASCII.GetBytes($data_value)
+    $command = "set $($key) $($field_type[0]) $($expires_sec) $($data_value_bytes.Length)`r`n$($data_value)`r`n"
+    $writer.WriteLine($command)
+    $writer.Flush()
+    # Wait for stream Write
+    Start-Sleep -Milliseconds 1
+
+    $socket.Close()
+    return $data_value
 }
 Export-ModuleMember -Function session_cache_set
 
@@ -184,17 +283,56 @@ function session_cache_key_exists {
         [Parameter(Mandatory=$true)][String]$key,
         [Parameter(Mandatory=$false)][System.Management.Automation.Runspaces.PSSession]$session = $null
     )
-    $current_cache = @{}
-    if ($null -eq $session) {
-        $session = session_cache_init
-    }
-    $current_cache = Invoke-Command -Session $session -ScriptBlock {
-        (Get-Variable -Name session_cache -Scope Global).Value
-    }
+    
 
-    return $current_cache.ContainsKey($key)
+    return
 }
 Export-ModuleMember -Function session_cache_key_exists
+
+function session_cache_delete {
+    Param(
+        [Parameter(Mandatory=$true)][String]$key
+    )
+    $cache_host = 'localhost'
+    $cache_port = 11211
+    $socket = New-Object System.Net.Sockets.TcpClient("$($cache_host)", $cache_port)
+    if ($null -eq $socket) {
+        return
+    }
+    $stream = $socket.GetStream()
+    $writer = New-Object System.IO.StreamWriter($stream)
+    $command = "delete $($key)"
+    $writer.WriteLine($command)
+    $writer.Flush()
+    # Wait for stream Write
+    Start-Sleep -Milliseconds 1
+
+    $socket.Close()
+    return
+}
+Export-ModuleMember -Function session_cache_delete
+
+function session_cache_flush {
+    $cache_host = 'localhost'
+    $cache_port = 11211
+    $socket = New-Object System.Net.Sockets.TcpClient("$($cache_host)", $cache_port)
+    if ($null -eq $socket) {
+        return
+    }
+    $stream = $socket.GetStream()
+    $writer = New-Object System.IO.StreamWriter($stream)
+    $command = "flush_all "
+    $writer.WriteLine($command)
+    $writer.Flush()
+    # Wait for stream Write
+    Start-Sleep -Milliseconds 1
+
+    $socket.Close()
+    return
+}
+Export-ModuleMember -Function session_cache_flush
+
+
 
 <#
 .SYNOPSIS
