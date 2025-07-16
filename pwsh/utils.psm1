@@ -242,6 +242,7 @@ function getFieldType {
     $field_type = 'none'
     switch ($data_type.ToLower()) {
         ({
+            ($_ -eq '6') -or
             ($_ -eq 'hashtable') -or
             ($_ -eq 'object') -or
             ($_ -eq 'ordereddictionary') -or
@@ -252,6 +253,7 @@ function getFieldType {
             break
         }
         ({
+            ($_ -eq '5') -or
             ($_ -eq 'double') -or
             ($_ -eq 'float') -or
             ($_ -eq 'decimal')
@@ -261,6 +263,7 @@ function getFieldType {
             break
         }
         ({
+            ($_ -eq '4') -or
             ($_ -eq 'int') -or
             ($_ -eq 'int16') -or
             ($_ -eq 'int32') -or
@@ -271,6 +274,7 @@ function getFieldType {
             break
         }
         ({
+            ($_ -eq '3') -or
             ($_ -eq 'string') -or
             ($_ -eq 'char') -or
             ($_ -eq 'text')
@@ -280,6 +284,7 @@ function getFieldType {
             break
         }
         ({
+            ($_ -eq '12') -or
             ($_ -eq 'datetime') -or
             ($_ -eq 'timestamp')
         }) {
@@ -288,6 +293,7 @@ function getFieldType {
             break
         }
         ({
+            ($_ -eq '7') -or
             ($_ -eq 'object[]') -or
             ($_ -eq 'string[]') -or
             ($_ -eq 'int[]') -or
@@ -299,6 +305,7 @@ function getFieldType {
             break
         }
         ({
+            ($_ -eq '10') -or
             ($_ -eq 'bool') -or
             ($_ -eq 'boolean')
         }) {

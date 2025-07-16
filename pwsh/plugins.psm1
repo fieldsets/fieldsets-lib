@@ -87,18 +87,18 @@ Export-ModuleMember -Function checkDependencies
 function getPluginPriorityList {
     $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/' -ChildPath "pwsh"))
     $cache_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./cache.psm1"))
+    $priority_list = [Ordered]@{}
     Import-Module -Function session_cache_set, session_cache_get, session_cache_key_exists -Name $cache_module_path
-    if (session_cache_key_exists -key 'plugin_priority_queue') {
-        $priority_list = session_cache_get -key 'plugin_priority_queue'
-        Write-Host "Using cached Priority List"
+    if (session_cache_key_exists -key 'fieldsets_plugin_priority') {
+        $priority_list = session_cache_get -key 'fieldsets_plugin_priority'
     } else {
         $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
         $plugins = @{}
         foreach ($plugin in $plugin_dirs) {
-            $plugin_key = 'priority-99'
+            $plugin_key = 'plugin-priority-99'
             $plugin_enabled = $true # Enabled by default
             if (Test-Path -Path "$($plugin.FullName)/plugin.json") {
-                $plugin_json = Get-Content "$($plugin.FullName)/plugin.json" -Raw | ConvertFrom-Json -AsHashtable
+                $plugin_json = Get-Content "$($plugin.FullName)/plugin.json" -Raw | ConvertFrom-Json -Depth 10 -AsHashtable
                 if ($plugin_json.ContainsKey('enabled')) {
                     # Make sure it is explicitly set to false. A null or anyother value should mean that it is enabled.
                     if ($false -eq $plugin_json['enabled']) {
@@ -108,7 +108,7 @@ function getPluginPriorityList {
 
                 if ($plugin_json.ContainsKey('priority')) {
                     $plugin_priority = $plugin_json['priority']
-                    $plugin_key = "priority-$($plugin_priority)"
+                    $plugin_key = "plugin-priority-$($plugin_priority)"
                 }
             }
 
@@ -126,10 +126,9 @@ function getPluginPriorityList {
                 $priority_list[$_.Key] = $_.Value
             }
         }
-        session_cache_set -key 'plugin_priority_queue' -value $priority_list
-        Write-Host "Using generated Priority List"
+        $priority_list_json = ConvertTo-JSON -Compress -Depth 10 -InputObject $priority_list
+        session_cache_set -Key 'fieldsets_plugin_priority' -Type 'object' -Value $priority_list_json
     }
-    Write-Host (ConvertTo-JSON -InputObject $priority_list)
     return $priority_list
 }
 Export-ModuleMember -Function getPluginPriorityList

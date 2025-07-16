@@ -114,7 +114,7 @@ function xlsToJSON {
     #endregion rows
 
 
-    $results | ConvertTo-Json | Out-File -Encoding ASCII -FilePath $OutputFileName
+    $results | ConvertTo-Json -Depth 10 | Out-File -Encoding ASCII -FilePath $OutputFileName
 
     Get-Item $OutputFileName
 
