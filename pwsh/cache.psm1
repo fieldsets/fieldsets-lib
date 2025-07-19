@@ -1,76 +1,3 @@
-
-<#
-.SYNOPSIS
-    session_cache_connect Connect via SSH to our PSSession.
-
-.OUTPUTS
-    N/A
-
-.EXAMPLE
-    session_cache_connect
-
-.NOTES
-    Added: v0.0
-    Updated Date: July 5 2025
-#>
-function session_cache_connect {
-    $is_session = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_CACHE')
-    $cache_type = [System.Environment]::GetEnvironmentVariable('FIELDSETS_CACHE')
-    $cache_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_CACHE_HOST')
-    $cache_port = [System.Environment]::GetEnvironmentVariable('FIELDSETS_CACHE_PORT')
-
-    if ($null -eq $cache_host) {
-        $cache_host = 'localhost'
-    }
-    if ($null -eq $cache_port) {
-        $cache_host = 11211
-    }
-    if ($null -eq $cache_type) {
-        $cache_type = 'memcached'
-    }
-    # If we are already connected, the environment variable will be set.
-    if (($null -eq $is_session) -or ($false -eq $is_session)) {
-        $home_path = [System.Environment]::GetEnvironmentVariable('HOME')
-        $fieldsets_session_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_HOST')
-        $session_port = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_PORT')
-        $ssh_key_path = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY_PATH')
-        $session_key = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY')
-        if ($ssh_key_path.StartsWith('~')) {
-            $ssh_key_path = $ssh_key_path.Replace('~', "$($home_path)")
-        }
-        $session_key_path = [System.IO.Path]::GetFullPath((Join-Path -Path $ssh_key_path -ChildPath $session_key))
-        Enter-PSSession -HostName $fieldsets_session_host -Options @{StrictHostKeyChecking='no'} -Port $session_port -KeyFilePath $session_key_path
-        [System.Environment]::SetEnvironmentVariable('FIELDSETS_SESSION_CACHE', $true)
-        [System.Environment]::SetEnvironmentVariable('FIELDSETS_CACHE',$cache_type)
-        [System.Environment]::SetEnvironmentVariable('FIELDSETS_CACHE_HOST', $cache_host)
-        [System.Environment]::SetEnvironmentVariable('FIELDSETS_CACHE_PORT', $cache_port)
-    }
-}
-Export-ModuleMember -Function session_cache_connect
-
-<#
-.SYNOPSIS
-    session_cache_disconnect Disconnect our SSH PSSession.
-
-.OUTPUTS
-    N/A
-
-.EXAMPLE
-    session_cache_disconnect
-
-.NOTES
-    Added: v0.0
-    Updated Date: July 5 2025
-#>
-function session_cache_disconnect {
-    $is_session = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_CACHE')
-    # Connect if not connected.
-    if ($true -eq $is_session) {
-        Exit-PSSession
-    }
-}
-Export-ModuleMember -Function session_cache_disconnect
-
 <#
 .SYNOPSIS
     session_cache_init The default in memory session cache. Called by wrapper function cache_init.
@@ -90,11 +17,6 @@ function session_cache_init {
         [Parameter(Mandatory=$false)][Int]$expires = 86400 #24hrs in seconds by default
     )
 
-    $is_session = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_CACHE')
-    # Connect if not connected.
-    if (($null -eq $is_session) -or ($false -eq $is_session)) {
-        session_cache_connect
-    }
     $cache_host = 'localhost'
     $cache_port = 11211
     $data_value = ''
@@ -433,8 +355,6 @@ function session_cache_flush {
 }
 Export-ModuleMember -Function session_cache_flush
 
-
-
 <#
 .SYNOPSIS
     cache_init This fuction initializes the framework cache. It serves as a wrapper function with the intention of being clobbered.
@@ -450,7 +370,10 @@ Export-ModuleMember -Function session_cache_flush
     Updated Date: May 6 2025
 #>
 function cache_init {
-    return session_cache_init
+    Param (
+        [Parameter(Mandatory=$false)][Int]$expires = 86400 #24hrs in seconds by default
+    )
+    return session_cache_init -expires $expires
 }
 Export-ModuleMember -Function cache_init
 

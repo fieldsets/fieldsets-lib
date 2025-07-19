@@ -127,7 +127,7 @@ function getPluginPriorityList {
             }
         }
         $priority_list_json = ConvertTo-JSON -Compress -Depth 10 -InputObject $priority_list
-        session_cache_set -Key 'fieldsets_plugin_priority' -Type 'object' -Value $priority_list_json
+        session_cache_set -Key 'fieldsets_plugin_priority' -Type 'object' -Value $priority_list_json -Expires 0
     }
     return $priority_list
 }
