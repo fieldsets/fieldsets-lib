@@ -88,7 +88,7 @@ function getPluginPriorityList {
     $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/' -ChildPath "pwsh"))
     $cache_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./cache.psm1"))
     $priority_list = [Ordered]@{}
-    Import-Module -Function session_cache_set, session_cache_get, session_cache_key_exists -Name $cache_module_path
+    Import-Module -Function session_cache_set, session_cache_get, session_cache_key_exists -Name "$($cache_module_path)"
     if (session_cache_key_exists -key 'fieldsets_plugin_priority') {
         $priority_list = session_cache_get -key 'fieldsets_plugin_priority'
     } else {

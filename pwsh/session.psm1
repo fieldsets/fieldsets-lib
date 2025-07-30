@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    get_session_connect_info Set the variables use to connect to the powershell session and called by the data Hook 'fieldsets_session_connect_info'
+    getSessionConnectInfo Set the variables use to connect to the powershell session and called by the data Hook 'fieldsets_session_connect_info'
 
 .OUTPUTS
     [Hashtable] @{
@@ -16,7 +16,7 @@
     Added: v0.0
     Updated Date: July 18 2025
 #>
-function get_session_connect_info {
+function getSessionConnectInfo {
     Param(
         [Parameter(Mandatory=$false)][Hashtable]$data = @{}
     )
@@ -53,13 +53,14 @@ function get_session_connect_info {
     if (($null -eq $port) -or ($port -eq '')) {
         $port = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_PORT')
     }
+
     return @{
         Hostname = $hostname
         Port = $port
         Key = $key
     }
 }
-Export-ModuleMember -Function session_connect
+Export-ModuleMember -Function getSessionConnectInfo
 
 <#
 .SYNOPSIS
@@ -77,50 +78,29 @@ Export-ModuleMember -Function session_connect
 #>
 function session_connect {
     Param(
-        [Parameter(Mandatory=$false,Position=0)][String]$hostname = $null,
-        [Parameter(Mandatory=$false,Position=1)][Int]$port = $null,
-        [Parameter(Mandatory=$false,Position=2)][String]$key = $null
+        [Parameter(Mandatory=$false)][String]$hostname = 0.0.0.0,
+        [Parameter(Mandatory=$false)][Int]$port = 1022,
+        [Parameter(Mandatory=$false)][String]$key = '/root/.ssh/fieldsets_rsa'
     )
-    $session_name = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_NAME')
-    # If we are already connected, the environment variable will be set.
-    if (($null -eq $session_name) -or ($false -eq $session_name) -or ($session_name -eq '') -or ('false' -eq ("$($session_name)").ToLower())) {
-        if ($null -eq $hostname) {
-            $hostname = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_HOST')
-        }
-        if ($null -eq $port) {
-            $port = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_PORT')
-        }
-        if ($null -eq $key) {
-            $session_key = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY')
-            $session_key_path = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY_PATH')
-            if ($null -eq $session_key_path) {
-                # Fall back on ssh dir path
-                $session_key_path = [System.Environment]::GetEnvironmentVariable('SSH_KEY_PATH')
-            }
-            if ($session_key_path.StartsWith('~')) {
-                $home_path = [System.Environment]::GetEnvironmentVariable('HOME')
-                $session_key_path = $session_key_path.Replace('~', "$($home_path)")
-            }
-            $key = [System.IO.Path]::GetFullPath((Join-Path -Path $session_key_path -ChildPath $session_key))
-        }
-        if (Test-Path -LiteralPath $key) {
-            $key_file = Get-Item $key
-            $session_key  = $key_file.BaseName
-            $session_key_path = $key_file.DirectoryName
 
+    $session_client = [System.Environment]::GetEnvironmentVariable('SSH_CLIENT')
+
+    # If we are already connected, the SSH_CLIENT environment variable will be set.
+    if (($null -eq $session_client) -or ($session_name -eq '')) {
+        if (("$($key)").StartsWith('~')) {
+            $home_path = [System.Environment]::GetEnvironmentVariable('HOME')
+            $truncated_path = ("$($key)").Replace('~', '')
+            $key = Join-Path -Path $home_path -ChildPath $truncated_path
+        }
+
+        if (Test-Path -Path $key) {
             Enter-PSSession -HostName $hostname -Options @{StrictHostKeyChecking='no'} -Port $port -KeyFilePath $key
-            [System.Environment]::SetEnvironmentVariable('FIELDSETS_SESSION_NAME', 'fieldsets_session')
-            [System.Environment]::SetEnvironmentVariable('FIELDSETS_SESSION_HOST', $hostname)
-            [System.Environment]::SetEnvironmentVariable('FIELDSETS_SESSION_PORT', $port)
-            [System.Environment]::SetEnvironmentVariable('FIELDSETS_SESSION_KEY', $session_key)
-            [System.Environment]::SetEnvironmentVariable('FIELDSETS_SESSION_KEY_PATH', $session_key_path)
         } else {
             Write-Error "Invalid Session Key File: $($key)"
         }
     }
 }
 Export-ModuleMember -Function session_connect
-
 
 <#
 .SYNOPSIS

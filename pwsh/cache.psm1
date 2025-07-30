@@ -69,8 +69,6 @@ function session_cache_init {
         Start-Sleep -Milliseconds 1
     }
     $socket.Close()
-
-    return $data_value
 }
 Export-ModuleMember -Function session_cache_init
 
@@ -147,6 +145,17 @@ function session_cache_get {
     if ($data_value.Length -gt 0) {
         switch ($type) {
             ({
+                ($_ -eq 'hook')
+            }) {
+                if ($PSVersionTable.PSVersion.Major -eq 5) {
+                    $return_val = ConvertFrom-Json -InputObject $data_value
+                    return $return_val
+                } else {
+                    $return_val = ConvertFrom-Json -Depth 10 -InputObject $data_value -AsHashtable -NoEnumerate
+                    return $return_val
+                }
+            }
+            ({
                 ($_ -eq 'string')
             }) {
                 return "$($data_value)"
@@ -165,7 +174,7 @@ function session_cache_get {
                 ($_ -eq 'list')
             }) {
                 if ($PSVersionTable.PSVersion.Major -eq 5) {
-                    $return_val = ConvertFrom-Json -Depth 10 -InputObject $data_value
+                    $return_val = ConvertFrom-Json -InputObject $data_value
                     return $return_val
                 } else {
                     $return_val = ConvertFrom-Json -Depth 10 -InputObject $data_value -AsHashtable -NoEnumerate
@@ -176,7 +185,7 @@ function session_cache_get {
                 ($_ -eq 'object')
             }) {
                 if ($PSVersionTable.PSVersion.Major -eq 5) {
-                    $return_val = ConvertFrom-Json -Depth 10 -InputObject $data_value
+                    $return_val = ConvertFrom-Json -InputObject $data_value
                     return $return_val
                 } else {
                     $return_val = ConvertFrom-Json -Depth 10 -InputObject $data_value -AsHashtable -NoEnumerate
@@ -234,7 +243,7 @@ function session_cache_set {
 
     $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/' -ChildPath "pwsh"))
     $utils_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./utils.psm1"))
-    Import-Module -Function getFieldType -Name $utils_module_path
+    Import-Module -Function getFieldType -Name "$($utils_module_path)"
     $cache_host = 'localhost'
     $cache_port = 11211
     $data_value = ''
@@ -254,15 +263,15 @@ function session_cache_set {
 
     $data_object = $value
     # Make sure we properly parse arrays and objects
-    if ($field_type[1] -eq 'object') {
+    if (($field_type[1] -eq 'object') -or ($field_type[1] -eq 'hook')) {
         if ($PSVersionTable.PSVersion.Major -eq 5) {
-            $data_object = ConvertFrom-Json -InputObject $value -Depth 10
+            $data_object = ConvertFrom-Json -InputObject $value
         } else {
             $data_object = ConvertFrom-Json -InputObject $value -Depth 10 -NoEnumerate -AsHashtable
         }
     } elseif ($field_type[1] -eq 'list') {
         if ($PSVersionTable.PSVersion.Major -eq 5) {
-            $data_object = ConvertFrom-Json -InputObject $value -Depth 10
+            $data_object = ConvertFrom-Json -InputObject $value
         } else {
             $data_object = ConvertFrom-Json -InputObject $value -Depth 10 -NoEnumerate
         }
@@ -277,7 +286,6 @@ function session_cache_set {
     Start-Sleep -Milliseconds 1
 
     $socket.Close()
-    return $data_value
 }
 Export-ModuleMember -Function session_cache_set
 

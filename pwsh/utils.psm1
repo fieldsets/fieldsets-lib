@@ -242,6 +242,17 @@ function getFieldType {
     $field_type = 'none'
     switch ($data_type.ToLower()) {
         ({
+            ($_ -eq '0') -or
+            ($_ -eq 'hook') -or
+            ($_ -eq 'datahook') -or
+            ($_ -eq 'actionhook') -or
+            ($_ -eq 'none')
+        }) {
+            $field_type_id = 0
+            $field_type = 'hook'
+            break
+        }
+        ({
             ($_ -eq '6') -or
             ($_ -eq 'hashtable') -or
             ($_ -eq 'object') -or
@@ -321,3 +332,70 @@ function getFieldType {
     return @($field_type_id,$field_type)
 }
 Export-ModuleMember -Function getFieldType
+
+
+<#
+.SYNOPSIS
+    hasKey fuction will return a true or false if a key/property exists in a hashtable, dictionary or object.
+
+.PARAMETER -object [PSCustomObject]
+    The object to check
+
+.PARAMETER -key [String]
+    The key to check for within the object
+
+.OUTPUTS
+    [Boolean]
+
+.EXAMPLE
+    hasKey -object @{mykey=1} -key 'mykey'
+    Returns: $true
+
+.NOTES
+    Added: v0.0
+    Updated Date: July 29 2025
+#>
+function hasKey {
+    Param(
+        [Parameter(Mandatory=$true)][Object]$object,
+        [Parameter(Mandatory=$true)][String]$key
+    )
+
+    $data_type = $object.GetType()
+    $haskey = $false
+    if (
+        ("$($data_type.BaseType)" -eq 'hashtable') -or
+        ("$($data_type.BaseType)" -eq 'object') -or
+        ("$($data_type.BaseType)" -eq 'dictionary') -or
+        ("$($data_type.BaseType)" -eq 'System.Object') -or
+        ("$($data_type.BaseType)" -eq 'System.Collections.Hashtable') -or
+        ("$($data_type.BaseType)" -eq 'System.Management.Automation.OrderedHashtable')
+    ) {
+        switch ($data_type.Name) {
+            'OrderedDictionary' {
+                $haskey = $object.Contains($key)
+                break
+            }
+            'PSCustomObject' {
+                $haskey = ($key -in $object.PSObject.Properties.Name)
+                break
+            }
+            ({
+                ($_ -eq 'Hashtable') -or
+                ($_ -eq 'OrderedHashtable')
+            }) {
+                $haskey = $object.ContainsKey($key)
+                break
+            }
+            default {
+                $haskey = $object.Contains($key)
+                break
+            }
+        }
+    } else {
+        Write-Host "hasKey: Invalid Object. Please use an Object, Hashtable or Dictionary."
+    }
+    return $haskey
+}
+Export-ModuleMember -Function hasKey
+
