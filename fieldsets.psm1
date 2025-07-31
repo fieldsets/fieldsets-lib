@@ -14,7 +14,10 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
         if (Test-Path -Path "$($plugin_lib)") {
             $plugin_modules = Get-Item -Path "$($plugin_lib)*.psm1" | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
             foreach ($plugin_module in $plugin_modules) {
-                Import-Module $plugin_module.FullName
+                # If a plugin utilizes the fieldsets-lib, we want to avoid nesting our libraries. So we won't load any libs named fieldsets.psm1
+                if ($plugin_module.Name -ne 'fieldsets.psm1') {
+                    Import-Module $plugin_module.FullName
+                }
             }
         }
     }
