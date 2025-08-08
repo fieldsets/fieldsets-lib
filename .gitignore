@@ -2,15 +2,8 @@
 *.env
 .gitkeep
 
-./bash/*
-!./bash/db.sh
-!./bash/utils.sh
-
-./pwsh/*
-!./pwsh/plugins.psm1
-!./pwsh/utils.psm1
-
 ./plugins/*
+!./plugins
 !./plugins/README.md
 
 # Editor output
