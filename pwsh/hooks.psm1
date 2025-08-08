@@ -52,9 +52,8 @@ function addActionHook {
         [Parameter(Mandatory=$false,ParameterSetName='Scriptblock')][ScriptBlock]$scriptblock = $null,
         [Parameter(Mandatory=$false)][Int]$priority = 10
     )
-    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/' -ChildPath "pwsh"))
-    $cache_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./cache.psm1"))
-    $utils_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./utils.psm1"))
+    $cache_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./cache.psm1"))
+    $utils_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./utils.psm1"))
     Import-Module -Function session_cache_set, session_cache_get, session_cache_key_exists -Name "$($cache_module_path)"
     Import-Module -Function hasKey -Name "$($utils_module_path)"
 
@@ -109,9 +108,8 @@ function addDataHook {
         [Parameter(Mandatory=$false,ParameterSetName='Scriptblock')][ScriptBlock]$scriptblock = $null,
         [Parameter(Mandatory=$false)][Int]$priority = 10
     )
-    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/' -ChildPath "pwsh"))
-    $cache_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./cache.psm1"))
-    $utils_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path $module_path -ChildPath "./utils.psm1"))
+    $cache_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./cache.psm1"))
+    $utils_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./utils.psm1"))
     Import-Module -Function session_cache_set, session_cache_get, session_cache_key_exists -Name "$($cache_module_path)"
     Import-Module -Function hasKey -Name "$($utils_module_path)"
 
@@ -165,8 +163,8 @@ function performActionHook {
     Param(
         [Parameter(Mandatory=$true)][String]$name
     )
-    $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib")
-    Import-Module -Name "$($module_path)/fieldsets.psm1"
+    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./cache.psm1"))
+    Import-Module -Function session_cache_get -Name "$($module_path)"
     $callbacks = session_cache_get -key "actionhook_$($name)"
     if ($null -ne $callbacks) {
         $callbacks.GetEnumerator() | ForEach-Object {
@@ -207,8 +205,8 @@ function parseDataHook {
         [Parameter(Mandatory=$true)][String]$name,
         [Parameter(Mandatory=$false)][hashtable]$data = @{}
     )
-    $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib")
-    Import-Module -Name "$($module_path)/fieldsets.psm1"
+    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./cache.psm1"))
+    Import-Module -Function session_cache_get -Name "$($module_path)"
     $callbacks = session_cache_get -key "datahook_$($name)"
     if ($null -ne $callbacks) {
         $callbacks.GetEnumerator() | ForEach-Object {
@@ -250,6 +248,13 @@ Export-ModuleMember -Function parseDataHook
     Updated Date: July 11 2025
 #>
 function addCoreHooks {
+    addDataHook -Name 'fieldsets_cache_init' -Callback 'defaultDataHook' -Priority 10
+    addDataHook -Name 'fieldsets_cache_set' -Callback 'defaultDataHook' -Priority 10
+    addDataHook -Name 'fieldsets_cache_get' -Callback 'defaultDataHook' -Priority 10
+    addDataHook -Name 'fieldsets_cache_key_exists' -Callback 'defaultDataHook' -Priority 10
+    addDataHook -Name 'fieldsets_cache_flush' -Callback 'defaultDataHook' -Priority 10
+    addDataHook -Name 'fieldsets_cache_delete' -Callback 'defaultDataHook' -Priority 10
+
     addActionHook -Name 'fieldsets_set_local_env' -Callback 'defaultActionHook' -Priority 10
     addActionHook -Name 'fieldsets_set_session_env' -Callback 'defaultActionHook' -Priority 10
     addDataHook -Name 'fieldsets_session_connect_info' -Callback 'getSessionConnectInfo' -Priority 10
@@ -260,6 +265,7 @@ function addCoreHooks {
     addActionHook -Name 'fieldsets_config_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_post_config_phase' -Callback 'defaultActionHook' -priority 10
     addDataHook -Name 'fieldsets_db_connect_info' -Callback 'getDBConnectInfo' -Priority 10
+    addDataHook -Name 'fieldsets_db_connect_info' -Callback 'cacheDBConnectInfo' -Priority 99
 
     addActionHook -Name 'fieldsets_pre_import_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_import_phase' -Callback 'defaultActionHook' -priority 10
@@ -268,8 +274,16 @@ function addCoreHooks {
     addActionHook -Name 'fieldsets_run_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_post_run_phase' -Callback 'defaultActionHook' -priority 10
 
-    addDataHook -Name 'fieldsets_add_extract_targets' -Callback 'addExtractTargets' -priority 10
-    addDataHook -Name 'fieldsets_add_transform_targets' -Callback 'addTransformTargets' -priority 10
-    addDataHook -Name 'fieldsets_add_load_targets' -Callback 'addLoadTargets' -priority 10
+    addDataHook -Name 'fieldsets_extract_targets' -Callback 'addExtractTargets' -priority 10
+    addDataHook -Name 'fieldsets_transform_targets' -Callback 'addTransformTargets' -priority 10
+    addDataHook -Name 'fieldsets_load_targets' -Callback 'addLoadTargets' -priority 10
+
+    addActionHook -Name 'fieldsets_watch_extract_targets' -Callback 'watchPipelineExtractTargets' -priority 10
+    addActionHook -Name 'fieldsets_watch_transform_targets' -Callback 'watchPipelineTransformTargets' -priority 10
+    addActionHook -Name 'fieldsets_watch_load_targets' -Callback 'watchPipelineLoadTargets' -priority 10
+
+    addActionHook -Name 'fieldsets_schedule_extract_targets' -Callback 'schedulePipelineExtractTargets' -priority 10
+    addActionHook -Name 'fieldsets_schedule_transform_targets' -Callback 'schedulePipelineTransformTargets' -priority 10
+    addActionHook -Name 'fieldsets_schedule_load_targets' -Callback 'schedulePipelineLoadTargets' -priority 10
 }
 Export-ModuleMember -Function addCoreHooks

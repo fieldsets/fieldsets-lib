@@ -381,7 +381,14 @@ function cache_init {
     Param (
         [Parameter(Mandatory=$false)][Int]$expires = 86400 #24hrs in seconds by default
     )
-    return session_cache_init -expires $expires
+    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./hooks.psm1"))
+    Import-Module -Function parseDataHook -Name "$($module_path)"
+    # You can add custom data hooks to set a different callback.
+    $data = parseDataHook -Name 'fieldsets_cache_init' -Data @{callback = 'session_cache_init'; expires = $expires}
+    $callback = $data['callback']
+    $data.Remove('callback')
+
+    return & "$($callback)" @data
 }
 Export-ModuleMember -Function cache_init
 
@@ -407,7 +414,14 @@ function cache_get {
     Param(
         [Parameter(Mandatory=$true)][String]$key
     )
-    return session_cache_get -key $key
+    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./hooks.psm1"))
+    Import-Module -Function parseDataHook -Name "$($module_path)"
+    # You can add custom data hooks to set a different callback.
+    $data = parseDataHook -Name 'fieldsets_cache_get' -Data @{callback = 'session_cache_get'; key = $key}
+    $callback = $data['callback']
+    $data.Remove('callback')
+
+    return & "$($callback)" @data
 }
 Export-ModuleMember -Function cache_get
 
@@ -438,7 +452,14 @@ function cache_set {
         [Parameter(Mandatory=$false)][String]$type = $null,
         [Parameter(Mandatory=$false)][Int]$expires = 86400 #24hrs in seconds by default
     )
-    session_cache_set -key $key -value $value -type $type -expires $expires
+    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./hooks.psm1"))
+    Import-Module -Function parseDataHook -Name "$($module_path)"
+    # You can add custom data hooks to set a different callback.
+    $data = parseDataHook -Name 'fieldsets_cache_set' -Data @{callback = 'session_cache_set'; key = $key; value = $value; type = $type; expires = $expires}
+    $callback = $data['callback']
+    $data.Remove('callback')
+
+    return & "$($callback)" @data
 }
 Export-ModuleMember -Function cache_set
 
@@ -464,7 +485,65 @@ function cache_key_exists {
     Param(
         [Parameter(Mandatory=$true)][String]$key
     )
+    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./hooks.psm1"))
+    Import-Module -Function parseDataHook -Name "$($module_path)"
+    # You can add custom data hooks to set a different callback.
+    $data = parseDataHook -Name 'fieldsets_cache_key_exists' -Data @{callback = 'session_cache_key_exists'; key = $key}
+    $callback = $data['callback']
+    $data.Remove('callback')
 
-    return session_cache_key_exists -key $key
+    return & "$($callback)" @data
 }
 Export-ModuleMember -Function cache_key_exists
+
+
+<#
+.SYNOPSIS
+    cache_delete A wrapper function to delete a key value pair from the cache. The default cache is a persistant session.
+
+.PARAMETER -key [String]
+    The cache key of the pair to remove.
+
+.EXAMPLE
+    cache_delete -Key 'blah'
+
+.NOTES
+    Added: v0.0
+    Updated Date: Apr 24 2025
+#>
+function cache_delete {
+    Param(
+        [Parameter(Mandatory=$true)][String]$key
+    )
+    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./hooks.psm1"))
+    Import-Module -Function parseDataHook -Name "$($module_path)"
+    # You can add custom data hooks to set a different callback.
+    $data = parseDataHook -Name 'fieldsets_cache_delete' -Data @{callback = 'session_cache_delete'; key = $key}
+    $callback = $data['callback']
+    $data.Remove('callback')
+
+    return & "$($callback)" @data
+}
+Export-ModuleMember -Function cache_delete
+
+<#
+.SYNOPSIS
+    cache_flush A wrapper function to delete all key value pairs from the cache. The default cache is a persistant session.
+
+.EXAMPLE
+    cache_flush
+
+.NOTES
+    Added: v0.0
+    Updated Date: Apr 24 2025
+#>
+function cache_flush {
+    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./hooks.psm1"))
+    Import-Module -Function parseDataHook -Name "$($module_path)"
+    # You can add custom data hooks to set a different callback.
+    $data = parseDataHook -Name 'fieldsets_cache_flush' -Data @{callback = 'session_cache_flush'}
+    $callback = $data['callback']
+
+    return & "$($callback)"
+}
+Export-ModuleMember -Function cache_delete
