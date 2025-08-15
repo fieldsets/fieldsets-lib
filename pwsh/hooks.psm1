@@ -74,7 +74,9 @@ function addActionHook {
     $priority_key = "priority-$($padded_priority)"
     $has_key = hasKey -Object $existing_priority_queue -Key $priority_key
     if ($has_key) {
-        $existing_priority_queue["$($priority_key)"] += $parser
+        if ($existing_priority_queue["$($priority_key)"] -notcontains $parser) {
+            $existing_priority_queue["$($priority_key)"] += $parser
+        }
     } else {
         $existing_priority_queue["$($priority_key)"] = @($parser)
     }
@@ -173,6 +175,7 @@ function performActionHook {
                 foreach ($action in $action_list) {
                     # Check if function exists in scope, otheriwse convert to a scriptblock and execute
                     if (Get-Command "$($action)" -ErrorAction SilentlyContinue) {
+                        Write-Host "Performing action hook $($name): $($action)"
                         & "$($action)"
                     } else {
                         $script_block = [ScriptBlock]::Create($action)
@@ -258,18 +261,23 @@ function addCoreHooks {
     addActionHook -Name 'fieldsets_set_local_env' -Callback 'defaultActionHook' -Priority 10
     addActionHook -Name 'fieldsets_set_session_env' -Callback 'defaultActionHook' -Priority 10
     addDataHook -Name 'fieldsets_session_connect_info' -Callback 'getSessionConnectInfo' -Priority 10
+    addDataHook -Name 'fieldsets_session_connect_info' -Callback 'cacheSessionConnectInfo' -Priority 99
+
+    addDataHook -Name 'fieldsets_db_connect_info' -Callback 'getDBConnectInfo' -Priority 10
+    addDataHook -Name 'fieldsets_db_connect_info' -Callback 'cacheDBConnectInfo' -Priority 99
+
     addActionHook -Name 'fieldsets_pre_init_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_init_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_post_init_phase' -Callback 'defaultActionHook' -priority 10
+
     addActionHook -Name 'fieldsets_pre_config_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_config_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_post_config_phase' -Callback 'defaultActionHook' -priority 10
-    addDataHook -Name 'fieldsets_db_connect_info' -Callback 'getDBConnectInfo' -Priority 10
-    addDataHook -Name 'fieldsets_db_connect_info' -Callback 'cacheDBConnectInfo' -Priority 99
 
     addActionHook -Name 'fieldsets_pre_import_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_import_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_post_import_phase' -Callback 'defaultActionHook' -priority 10
+
     addActionHook -Name 'fieldsets_pre_run_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_run_phase' -Callback 'defaultActionHook' -priority 10
     addActionHook -Name 'fieldsets_post_run_phase' -Callback 'defaultActionHook' -priority 10

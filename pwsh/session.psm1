@@ -20,8 +20,10 @@ function getSessionConnectInfo {
     Param(
         [Parameter(Mandatory=$false)][Hashtable]$data = @{}
     )
-    $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./cache.psm1"))
-    Import-Module -Function cache_get, cache_set, cache_key_exists -Name "$($module_path)"
+    $cache_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./cache.psm1"))
+    $utils_module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./utils.psm1"))
+    Import-Module -Function session_cache_set, session_cache_get, session_cache_key_exists -Name "$($cache_module_path)"
+    Import-Module -Function hasKey -Name "$($utils_module_path)"
 
     $port = $null
     $key = $null
@@ -44,9 +46,9 @@ function getSessionConnectInfo {
         $cache_session_key = "session_connect_info_$($hostname)"
     }
 
-    $is_cached = cache_key_exists -key "$($cache_session_key)"
+    $is_cached = session_cache_key_exists -key "$($cache_session_key)"
     if ($is_cached) {
-        $cached_data = cache_get -key "$($cache_session_key)"
+        $cached_data = session_cache_get -key "$($cache_session_key)"
         if ($null -eq $hostname) {
             $has_hostname_key = hasKey -Object $cached_data -Key 'Hostname'
             if ($has_hostname_key) {
@@ -95,7 +97,7 @@ Export-ModuleMember -Function getSessionConnectInfo
 
 <#
 .SYNOPSIS
-    cacheDBConnectInfo ensure hook data is written to the cache.
+    cacheSessionConnectInfo ensure hook data is written to the cache.
 
 .OUTPUTS
     [Hashtable] @{
@@ -105,18 +107,18 @@ Export-ModuleMember -Function getSessionConnectInfo
     }
 
 .EXAMPLE
-    cacheDBConnectInfo
+    cacheSessionConnectInfo
 
 .NOTES
     Added: v0.0
     Updated Date: July 18 2025
 #>
-function cacheDBConnectInfo {
+function cacheSessionConnectInfo {
     Param(
         [Parameter(Mandatory=$false)][Hashtable]$data = @{}
     )
     $module_path = [System.IO.Path]::GetFullPath((Join-Path -Path '/usr/local/fieldsets/lib/pwsh' -ChildPath "./cache.psm1"))
-    Import-Module -Function cache_get, cache_set, cache_key_exists -Name "$($module_path)"
+    Import-Module -Function session_cache_set -Name "$($module_path)"
 
     $hostname = $data['Hostname']
     if ($null -eq $hostname) {
@@ -126,11 +128,11 @@ function cacheDBConnectInfo {
         $cache_session_key = "session_connect_info_$($hostname)"
     }
     $data_json = ConvertTo-JSON -Compress -Depth 3 -InputObject $data
-    cache_set -Key "$($cache_session_key)" -Type 'object' -Value $data_json -Expires 0
+    session_cache_set -Key "$($cache_session_key)" -Type 'object' -Value $data_json -Expires 0
 
     return $data
 }
-Export-ModuleMember -Function cacheDBConnectInfo
+Export-ModuleMember -Function cacheSessionConnectInfo
 
 
 <#
